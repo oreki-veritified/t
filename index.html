@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Tech Panel">
+    <title>Tech Control Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #00f7ff;
+            --secondary-color: #00555a;
+            --bg-color: #000000;
+            --panel-bg: rgba(10, 20, 30, 0.85);
+            --glow-shadow: 0 0 15px var(--primary-color), 0 0 30px var(--primary-color);
+            --text-glow: 0 0 5px var(--primary-color);
+            --pill-bg: #0b1620;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            color: var(--primary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            overscroll-behavior: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: radial-gradient(circle at center, #0b1620 0%, #000 100%);
+        }
+        .main-panel {
+            width: 90%;
+            max-width: 450px;
+            background: transparent;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 0 50px rgba(0, 247, 255, 0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .main-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(transparent, transparent, transparent, var(--primary-color));
+            animation: rotate-border 4s linear infinite;
+            z-index: -2;
+        }
+        .main-panel::after {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            background: var(--panel-bg);
+            border-radius: 18px;
+            backdrop-filter: blur(10px);
+            z-index: -1;
+        }
+        @keyframes rotate-border {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .corner-decorator {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: var(--primary-color);
+            border-style: solid;
+            opacity: 0.7;
+        }
+        .corner-decorator.top-left { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
+        .corner-decorator.top-right { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+        .corner-decorator.bottom-left { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; }
+        .corner-decorator.bottom-right { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+        .panel-divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(0, 247, 255, 0.7), transparent);
+        }
+        .panel-header {
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: bold;
+            text-shadow: var(--text-glow);
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 247, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        .pill-container-3d {
+            background: var(--pill-bg);
+            border-radius: 50px;
+            padding: 20px;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.8), inset 0 -2px 5px rgba(0, 247, 255, 0.3), 0 15px 25px -10px rgba(0, 247, 255, 0.4);
+            border: 1px solid rgba(0, 247, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .function-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 10px;
+        }
+        .function-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .toggle-switch:hover {
+            transform: scale(1.3);
+            filter: drop-shadow(0 0 8px var(--primary-color));
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #0b1620;
+            transition: .4s;
+            border-radius: 34px;
+            border: 1px solid rgba(0, 247, 255, 0.3);
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 3px;
+            background-color: #e0e0e0;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+        input:checked + .slider {
+            background-color: rgba(0, 247, 255, 0.5);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 15px var(--primary-color), inset 0 0 5px var(--primary-color);
+        }
+        input:checked + .slider:before {
+            transform: translateX(22px);
+            background-color: #fff;
+            box-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color);
+        }
+        .opt-section {
+            position: relative;
+            overflow: hidden;
+            border-radius: 15px;
+            background: linear-gradient(145deg, rgba(0, 247, 255, 0.05), transparent);
+            border: 1px solid rgba(0, 247, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        .opt-header {
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+        .opt-header:hover {
+            background: rgba(0, 247, 255, 0.1);
+            text-shadow: var(--text-glow);
+        }
+        .opt-content {
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.5s ease;
+            will-change: max-height, opacity;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0 15px;
+        }
+        .opt-section.active .opt-content {
+            max-height: 200px;
+            opacity: 1;
+            padding: 15px;
+            border-top: 1px solid rgba(0, 247, 255, 0.2);
+        }
+        .opt-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(0, 247, 255, 0.05);
+            border-radius: 5px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .opt-item:hover {
+            background: var(--primary-color);
+            color: #000;
+            transform: translateX(5px);
+        }
+        .contact-section {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(0, 247, 255, 0.2);
+        }
+        .social-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: rgba(0, 247, 255, 0.05);
+            border: 1px solid var(--primary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            text-decoration: none;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .social-btn:hover {
+            background: var(--primary-color);
+            color: #000;
+            box-shadow: 0 0 30px var(--primary-color), 0 0 60px var(--primary-color);
+            transform: scale(1.3) rotate(10deg);
+        }
+        .social-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.2);
+            transform: scale(0);
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        .social-btn:hover::before {
+            transform: scale(1.5);
+        }
+        #lightning-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+        }
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease;
+        }
+        .login-box {
+            text-align: center;
+            border: 1px solid var(--primary-color);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(0, 247, 255, 0.4), inset 0 0 20px rgba(0, 247, 255, 0.2);
+            background: transparent;
+            position: relative;
+            overflow: hidden;
+            width: 400px;
+            z-index: 2;
+            backdrop-filter: blur(5px);
+            clip-path: polygon(0 40px, 40px 0, calc(100% - 40px) 0, 100% 40px, 100% calc(100% - 40px), calc(100% - 40px) 100%, 40px 100%, 0 calc(100% - 40px));
+        }
+        .scan-line {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 2px;
+            background: rgba(0, 247, 255, 0.8);
+            box-shadow: 0 0 15px var(--primary-color);
+            animation: scan 2s linear infinite;
+            z-index: 5;
+            pointer-events: none;
+        }
+        @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        .login-box::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            z-index: -2;
+            background: conic-gradient(transparent, transparent, transparent, var(--primary-color));
+            animation: rotate-border 3s linear infinite;
+        }
+        .login-box::after {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            background: rgba(5, 10, 15, 0.95);
+            clip-path: polygon(0 40px, 40px 0, calc(100% - 40px) 0, 100% 40px, 100% calc(100% - 40px), calc(100% - 40px) 100%, 40px 100%, 0 calc(100% - 40px));
+            z-index: -1;
+        }
+        .hud-corner {
+            position: absolute;
+            width: 15px; height: 15px;
+            border: 2px solid var(--primary-color);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+        .hud-corner.tl { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .hud-corner.tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+        .hud-corner.bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+        .hud-corner.br { bottom: 0; right: 0; border-left: none; border-top: none; }
+        .login-content { transition: 0.3s; }
+        .login-box h2 {
+            margin-bottom: 20px;
+            letter-spacing: 5px;
+            text-shadow: 0 0 10px var(--primary-color);
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        #accessKey {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
+            border-left: 3px solid var(--primary-color);
+            padding: 15px;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+            letter-spacing: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            transition: 0.3s;
+        }
+        #accessKey:focus {
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.2);
+            border-color: var(--primary-color);
+        }
+        .login-box button {
+            background: linear-gradient(90deg, transparent, rgba(0, 247, 255, 0.1), transparent);
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-box button:hover {
+            background: var(--primary-color);
+            color: #000;
+            box-shadow: 0 0 30px var(--primary-color);
+            letter-spacing: 4px;
+        }
+        .error-msg {
+            color: #ff3333;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            height: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            text-shadow: 0 0 5px #ff0000;
+        }
+        .tech-loader {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px; height: 120px;
+            z-index: 10;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .tech-circle {
+            position: absolute;
+            width: 100%; height: 100%;
+            border: 2px solid transparent;
+            border-top-color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+        }
+        .tech-circle:nth-child(2) {
+            width: 70%; height: 70%;
+            border-top-color: transparent; border-bottom-color: transparent;
+            border-left-color: var(--primary-color); border-right-color: var(--primary-color);
+            animation-direction: reverse;
+        }
+        .tech-text {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            animation: blink 0.5s infinite;
+            margin-top: 5px;
+        }
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        /* Chart Styles */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 120px;
+            border: 1px solid rgba(0, 247, 255, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 10px;
+        }
+        #matrix-chart-bg, #wave-chart {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+        #matrix-chart-bg { opacity: 0.3; z-index: 1; }
+        #wave-chart { z-index: 2; }
+        .chart-title {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 10px;
+            letter-spacing: 4px;
+            text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color);
+            background: linear-gradient(90deg, transparent, rgba(0, 247, 255, 0.2), transparent);
+            padding: 10px;
+            border-top: 1px solid var(--primary-color);
+            border-bottom: 1px solid var(--primary-color);
+            animation: blink-title 1s infinite alternate;
+        }
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            background: rgba(11, 22, 32, 0.95);
+            border: 1px solid var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.2);
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: slideIn 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            backdrop-filter: blur(10px);
+            min-width: 280px;
+        }
+        .toast i { font-size: 1.2rem; color: var(--primary-color); text-shadow: 0 0 10px var(--primary-color); }
+        .toast.hide { animation: slideOut 0.4s forwards; }
+        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { to { transform: translateX(120%); opacity: 0; } }
+
+        /* Tech Modal */
+        .tech-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 20000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tech-modal {
+            width: 320px;
+            padding: 30px;
+            background: rgba(10, 20, 30, 0.95);
+            border: 1px solid var(--primary-color);
+            box-shadow: 0 0 50px rgba(0, 247, 255, 0.3), inset 0 0 20px rgba(0, 247, 255, 0.1);
+            text-align: center;
+            position: relative;
+            clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .tech-modal h3 { color: var(--primary-color); margin-bottom: 15px; letter-spacing: 2px; text-transform: uppercase; font-size: 1.1rem; text-shadow: 0 0 10px var(--primary-color); }
+        .tech-modal .status-text { font-family: 'Courier New', monospace; font-size: 0.9rem; color: #fff; margin-bottom: 20px; min-height: 1.2em; }
+        .tech-progress { width: 100%; height: 4px; background: #333; position: relative; overflow: hidden; border-radius: 2px; }
+        .tech-progress-bar { width: 0%; height: 100%; background: var(--primary-color); box-shadow: 0 0 10px var(--primary-color); transition: width 0.1s linear; }
+        .tech-modal-corner { position: absolute; width: 10px; height: 10px; border: 2px solid var(--primary-color); transition: 0.3s; }
+        .tm-tl { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .tm-tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+        .tm-bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+        .tm-br { bottom: 0; right: 0; border-left: none; border-top: none; }
+        @keyframes blink-title {
+            0% { opacity: 0.7; text-shadow: 0 0 5px var(--primary-color); }
+            100% { opacity: 1; text-shadow: 0 0 20px var(--primary-color), 0 0 40px #fff; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <audio id="bg-music" loop preload="auto" playsinline style="display: none;">
+        <source src="background_music.mp3" type="audio/mpeg">
+    </audio>
+    <div class="toast-container" id="toastContainer"></div>
+    <div class="tech-modal-overlay" id="techModal">
+        <div class="tech-modal">
+            <div class="tech-modal-corner tm-tl"></div>
+            <div class="tech-modal-corner tm-tr"></div>
+            <div class="tech-modal-corner tm-bl"></div>
+            <div class="tech-modal-corner tm-br"></div>
+            <h3 id="modalTitle">SYSTEM OPTIMIZATION</h3>
+            <div class="status-text" id="modalStatus">INITIALIZING...</div>
+            <div class="tech-progress"><div class="tech-progress-bar" id="modalBar"></div></div>
+        </div>
+    </div>
+    <div id="login-screen">
+        <canvas id="lightning-canvas"></canvas>
+        <div class="login-box">
+            <div class="scan-line"></div>
+            <div class="hud-corner tl"></div>
+            <div class="hud-corner tr"></div>
+            <div class="hud-corner bl"></div>
+            <div class="hud-corner br"></div>
+            <div class="login-content" id="loginContent">
+                <h2>SECURITY GATE</h2>
+                <div style="font-size: 0.6rem; opacity: 0.5; letter-spacing: 1px; margin-top: -15px; margin-bottom: 20px;">OREKI_VERITIFIED</div>
+                <div class="input-group" id="inputGroup">
+                    <input type="password" id="accessKey" placeholder="ENTER KEY">
+                    <button onclick="checkKey()">UNLOCK SYSTEM</button>
+                </div>
+                <div class="error-msg" id="errorMsg">ACCESS DENIED - INVALID KEY</div>
+            </div>
+            <div class="tech-loader" id="techLoader">
+                <div class="tech-circle" style="top: 50%; left: 50%;"></div>
+                <div class="tech-circle" style="top: 50%; left: 50%;"></div>
+                <div class="tech-text" id="loaderText">VERIFYING</div>
+            </div>
+        </div>
+    </div>
+    <div class="main-panel" id="mainPanel">
+        <span class="corner-decorator top-left"></span>
+        <span class="corner-decorator top-right"></span>
+        <span class="corner-decorator bottom-left"></span>
+        <span class="corner-decorator bottom-right"></span>
+        <div class="panel-header">
+            <div>SYSTEM CONTROL</div>
+            <div style="font-size: 0.6rem; opacity: 0.5; letter-spacing: 1px; margin-top: 5px;">OREKI_VERITIFIED</div>
+        </div>
+        <div class="pill-container-3d">
+            <div class="function-item">
+                <span class="function-name">Aim Assist</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="func1" onchange="toggleFunction(1, this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="function-item">
+                <span class="function-name">Wall Hack Visual</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="func2" onchange="toggleFunction(2, this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="function-item">
+                <span class="function-name">No Recoil</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="func3" onchange="toggleFunction(3, this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="function-item">
+                <span class="function-name">Speed Boost</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="func4" onchange="toggleFunction(4, this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="function-item">
+                <span class="function-name">Auto Loot</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="func5" onchange="toggleFunction(5, this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="panel-divider"></div>
+        <div class="opt-section" id="optSection">
+            <div class="opt-header" onclick="toggleOptimization()">
+                <span><i class="fas fa-microchip"></i> SYSTEM OPTIMIZATION</span>
+                <i class="fas fa-chevron-down" id="optIcon"></i>
+            </div>
+            <div class="opt-content">
+                <div class="opt-item" onclick="runOptimization('Clear RAM')">
+                    <i class="fas fa-memory"></i> Clear RAM Cache
+                </div>
+                <div class="opt-item" onclick="runOptimization('FPS Boost')">
+                    <i class="fas fa-tachometer-alt"></i> FPS Boost Mode
+                </div>
+                <div class="opt-item" onclick="runOptimization('Net Stabilizer')">
+                    <i class="fas fa-wifi"></i> Network Stabilizer
+                </div>
+            </div>
+        </div>
+        <div class="panel-divider"></div>
+        <div class="chart-title">QUANTUM FLUX MONITOR</div>
+        <div class="chart-container">
+            <canvas id="matrix-chart-bg"></canvas>
+            <canvas id="wave-chart"></canvas>
+        </div>
+        <div class="contact-section">
+            <a href="https://zalo.me/0336514635" class="social-btn" title="Zalo" target="_blank">
+                <i class="fas fa-comment-dots"></i>
+            </a>
+            <a href="#" class="social-btn" title="Messenger"><i class="fab fa-facebook-messenger"></i></a>
+            <a href="#" class="social-btn" title="Telegram"><i class="fab fa-telegram-plane"></i></a>
+            <a href="#" class="social-btn" title="Discord"><i class="fab fa-discord"></i></a>
+        </div>
+    </div>
+    <script>
+        const USER_KEY = "oreki";
+        const bgMusic = document.getElementById('bg-music');
+        bgMusic.volume = 1.0; 
+        function initAudio() {
+            bgMusic.play().then(() => {
+                document.removeEventListener('click', initAudio);
+                document.removeEventListener('touchstart', initAudio);
+                document.removeEventListener('keydown', initAudio);
+            }).catch(e => {
+            });
+        }
+        document.addEventListener('click', initAudio);
+        document.addEventListener('touchstart', initAudio);
+        document.addEventListener('keydown', initAudio);
+        function openFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(err => {});
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+        function checkKey() {
+            const input = document.getElementById('accessKey');
+            const errorMsg = document.getElementById('errorMsg');
+            const loginContent = document.getElementById('loginContent');
+            const techLoader = document.getElementById('techLoader');
+            const loaderText = document.getElementById('loaderText');
+            const loginScreen = document.getElementById('login-screen');
+            const mainPanel = document.getElementById('mainPanel');
+            initAudio();
+            openFullscreen();
+            if (input.value === USER_KEY) {
+                errorMsg.style.opacity = '0';
+                loginContent.style.filter = 'blur(10px)';
+                loginContent.style.opacity = '0.2';
+                loginContent.style.pointerEvents = 'none';
+                techLoader.style.display = 'flex';
+                let steps = ["DECRYPTING...", "ACCESSING...", "GRANTED"];
+                let stepIndex = 0;
+                let loadInterval = setInterval(() => {
+                    if(stepIndex < steps.length) {
+                        loaderText.innerText = steps[stepIndex];
+                        stepIndex++;
+                    } else {
+                        clearInterval(loadInterval);
+                    }
+                }, 600);
+                setTimeout(() => {
+                    loginScreen.style.opacity = '0';
+                    setTimeout(() => { loginScreen.style.display = 'none'; }, 500);
+                    stopLightning();
+                    mainPanel.style.opacity = '1';
+                    mainPanel.style.transform = 'scale(1)';
+                }, 2200);
+            } else {
+                errorMsg.style.opacity = '1';
+                input.style.borderColor = 'red';
+            }
+        }
+        document.getElementById('accessKey').addEventListener('keyup', function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                document.querySelector('.login-box button').click();
+            }
+        });
+        const CheatEngine = {
+            aimAssist: false,
+            wallHack: false,
+            noRecoil: false,
+            speedBoost: false,
+            autoLoot: false
+        };
+        function toggleFunction(id, element) {
+            const isChecked = element.checked;
+            const name = element.parentElement.previousElementSibling.innerText;
+            if (isChecked) {
+                playSound('on');
+            } else {
+                playSound('off');
+            }
+            switch(id) {
+                case 1: CheatEngine.aimAssist = isChecked; break;
+                case 2: CheatEngine.wallHack = isChecked; break;
+                case 3: CheatEngine.noRecoil = isChecked; break;
+                case 4: CheatEngine.speedBoost = isChecked; break;
+                case 5: CheatEngine.autoLoot = isChecked; break;
+            }
+            if(isChecked) console.log(`[SYSTEM] Module ${name} injected.`);
+            if(isChecked) showToast(`${name} ACTIVATED`, 'success');
+        }
+        function showToast(msg, type) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            if(navigator.vibrate) navigator.vibrate(50);
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+        function toggleOptimization() {
+            const section = document.getElementById('optSection');
+            const icon = document.getElementById('optIcon');
+            section.classList.toggle('active');
+            if (section.classList.contains('active')) {
+                icon.style.transform = "rotate(180deg)";
+            } else {
+                icon.style.transform = "rotate(0deg)";
+            }
+        }
+        function runOptimization(type) {
+            const modal = document.getElementById('techModal');
+            const modalContent = modal.querySelector('.tech-modal');
+            const status = document.getElementById('modalStatus');
+            const bar = document.getElementById('modalBar');
+            const title = document.getElementById('modalTitle');
+            
+            modal.style.display = 'flex';
+            setTimeout(() => { modal.style.opacity = '1'; modalContent.style.transform = 'scale(1)'; }, 10);
+            
+            title.innerText = type.toUpperCase();
+            status.innerText = "ANALYZING SYSTEM...";
+            bar.style.width = "0%";
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 5;
+                if(progress > 30 && progress < 50) status.innerText = "CLEARING CACHE...";
+                if(progress > 70 && progress < 90) status.innerText = "OPTIMIZING REGISTRY...";
+                if(progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    status.innerText = "OPTIMIZATION COMPLETE";
+                    status.style.color = "#0f0";
+                    setTimeout(() => {
+                        modal.style.opacity = '0';
+                        modalContent.style.transform = 'scale(0.8)';
+                        setTimeout(() => { modal.style.display = 'none'; status.style.color = "#fff"; }, 300);
+                        showToast(`${type} FINISHED`, 'success');
+                    }, 1000);
+                }
+                bar.style.width = progress + "%";
+            }, 50);
+        }
+        function playSound(type) {
+        }
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const mouse = {
+            x: undefined,
+            y: undefined,
+            radius: 100
+        };
+        window.addEventListener('mousemove', event => {
+            mouse.x = event.x;
+            mouse.y = event.y;
+        });
+        window.addEventListener('touchmove', event => {
+            mouse.x = event.touches[0].clientX;
+            mouse.y = event.touches[0].clientY;
+        });
+        window.addEventListener('mouseout', () => {
+            mouse.x = undefined;
+            mouse.y = undefined;
+        });
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = (Math.random() - 0.5) * 1.5;
+                this.size = Math.random() * 2;
+            }
+            update() {
+                const speedMultiplier = CheatEngine.speedBoost ? 5 : 1;
+                this.x += this.vx * speedMultiplier;
+                this.y += this.vy * speedMultiplier;
+
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+                if (mouse.x !== undefined) {
+                    const dx = this.x - mouse.x;
+                    const dy = this.y - mouse.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < mouse.radius) {
+                        const force = (mouse.radius - distance) / mouse.radius;
+                        const forceX = (dx / distance) * force * 2.5;
+                        const forceY = (dy / distance) * force * 2.5;
+                        this.x += forceX;
+                        this.y += forceY;
+                    }
+                }
+                if (CheatEngine.autoLoot) {
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    const dx = centerX - this.x;
+                    const dy = centerY - this.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 300) {
+                        this.x += dx * 0.05;
+                        this.y += dy * 0.05;
+                    }
+                }
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(0, 247, 255, 0.8)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                if (CheatEngine.wallHack) {
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(this.x - 10, this.y - 10, 20, 20);
+                }
+            }
+        }
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < 200; i++) {
+                particles.push(new Particle());
+            }
+        }
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let closestDist = Infinity;
+            let closestParticle = null;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                if (CheatEngine.aimAssist) {
+                    const dx = particles[i].x - centerX;
+                    const dy = particles[i].y - centerY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        closestParticle = particles[i];
+                    }
+                }
+                for (let j = i; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 120) {
+                        ctx.strokeStyle = `rgba(0, 247, 255, ${1 - distance/120})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            if (CheatEngine.aimAssist && closestParticle) {
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(closestParticle.x, closestParticle.y);
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        initParticles();
+        animateParticles();
+        const lCanvas = document.getElementById('lightning-canvas');
+        const lCtx = lCanvas.getContext('2d');
+        let lightningInterval;
+        function resizeLightning() {
+            lCanvas.width = window.innerWidth;
+            lCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeLightning);
+        resizeLightning();
+        function drawLightning(x, y, segments, isBranch) {
+            lCtx.beginPath();
+            lCtx.moveTo(x, y);
+            const branchChance = isBranch ? 0.98 : 0.9;
+            lCtx.strokeStyle = `rgba(255, 255, 255, ${isBranch ? 0.6 : 1.0})`;
+            lCtx.lineWidth = isBranch ? Math.random() * 2 : Math.random() * 5 + 2;
+            lCtx.shadowColor = '#00f7ff';
+            lCtx.shadowBlur = isBranch ? 20 : 35;
+            for (let i = 0; i < segments; i++) {
+                if (y > lCanvas.height) break;
+                const lastX = x;
+                const lastY = y;
+                x += (Math.random() - 0.5) * 40;
+                y += Math.random() * 20;
+                lCtx.lineTo(x, y);
+                if (Math.random() > branchChance) {
+                    drawLightning(lastX, lastY, 15, true);
+                }
+            }
+            lCtx.stroke();
+        }
+        function drawSpark(startX, startY) {
+            const angle = Math.random() * Math.PI * 2;
+            const length = Math.random() * 60 + 30;
+            lCtx.beginPath();
+            lCtx.moveTo(startX, startY);
+            for (let i = 0; i < 3; i++) {
+                const segmentLength = length / 3;
+                const x = startX + Math.cos(angle) * (segmentLength * (i + 1)) + (Math.random() - 0.5) * 15;
+                const y = startY + Math.sin(angle) * (segmentLength * (i + 1)) + (Math.random() - 0.5) * 15;
+                lCtx.lineTo(x, y);
+            }
+            lCtx.strokeStyle = `rgba(255, 255, 255, ${Math.random() * 0.2 + 0.8})`;
+            lCtx.lineWidth = Math.random() * 2.5 + 1;
+            lCtx.shadowColor = '#00f7ff';
+            lCtx.shadowBlur = 20;
+            lCtx.stroke();
+        }
+        function animateLightning() {
+            lCtx.globalCompositeOperation = 'destination-out';
+            lCtx.fillStyle = "rgba(0, 0, 0, 0.1)";
+            lCtx.fillRect(0, 0, lCanvas.width, lCanvas.height);
+            lCtx.globalCompositeOperation = 'source-over';
+            if (Math.random() < 0.1) {
+                const startX = Math.random() * lCanvas.width;
+                drawLightning(startX, 0, 40, false);
+                lCtx.save();
+                lCtx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.1})`;
+                lCtx.fillRect(0, 0, lCanvas.width, lCanvas.height);
+                lCtx.restore();
+            }
+            const loginScreen = document.getElementById('login-screen');
+            if (loginScreen.style.opacity !== '0' && loginScreen.style.display !== 'none') {
+                if (Math.random() < 0.5) {
+                    const loginBoxEl = document.querySelector('.login-box');
+                    const rect = loginBoxEl.getBoundingClientRect();
+                    let x, y;
+                    const perimeter = rect.width * 2 + rect.height * 2;
+                    let randomPoint = Math.random() * perimeter;
+                    if (randomPoint < rect.width) {
+                        x = rect.left + randomPoint;
+                        y = rect.top;
+                    } else if (randomPoint < rect.width + rect.height) {
+                        x = rect.right;
+                        y = rect.top + (randomPoint - rect.width);
+                    } else if (randomPoint < rect.width * 2 + rect.height) {
+                        x = rect.right - (randomPoint - (rect.width + rect.height));
+                        y = rect.bottom;
+                    } else {
+                        x = rect.left;
+                        y = rect.bottom - (randomPoint - (rect.width * 2 + rect.height));
+                    }
+                    drawSpark(x, y);
+                }
+            }
+            if (lightningInterval) requestAnimationFrame(animateLightning);
+        }
+        function stopLightning() {
+            lightningInterval = null;
+        }
+        lightningInterval = true;
+        animateLightning();
+
+        // --- Chart Logic (Biểu đồ sóng + Nền Matrix) ---
+        const mCanvas = document.getElementById('matrix-chart-bg');
+        const mCtx = mCanvas.getContext('2d');
+        const wCanvas = document.getElementById('wave-chart');
+        const wCtx = wCanvas.getContext('2d');
+        
+        let mColumns, mDrops;
+        const mChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*";
+        const mFontSize = 10;
+
+        function resizeChart() {
+            const container = document.querySelector('.chart-container');
+            if(container) {
+                mCanvas.width = container.clientWidth;
+                mCanvas.height = container.clientHeight;
+                wCanvas.width = container.clientWidth;
+                wCanvas.height = container.clientHeight;
+                
+                mColumns = mCanvas.width / mFontSize;
+                mDrops = Array(Math.floor(mColumns)).fill(1);
+            }
+        }
+        window.addEventListener('resize', resizeChart);
+        setTimeout(resizeChart, 100); // Khởi tạo kích thước
+
+        function drawChartMatrix() {
+            mCtx.fillStyle = "rgba(0, 0, 0, 0.1)";
+            mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+            mCtx.fillStyle = "#00f7ff";
+            mCtx.font = mFontSize + "px monospace";
+            for (let i = 0; i < mDrops.length; i++) {
+                const text = mChars[Math.floor(Math.random() * mChars.length)];
+                mCtx.fillText(text, i * mFontSize, mDrops[i] * mFontSize);
+                if (mDrops[i] * mFontSize > mCanvas.height && Math.random() > 0.975) mDrops[i] = 0;
+                mDrops[i]++;
+            }
+        }
+        setInterval(drawChartMatrix, 50); // Chạy nền Matrix
+
+        let waveOffset = 0;
+        let time = 0;
+        function drawWaveChart() {
+            wCtx.clearRect(0, 0, wCanvas.width, wCanvas.height);
+
+            const waves = [
+                { color: 'rgba(0, 247, 255, 1)', speed: 0.05, amp: 20, freq: 0.02 },
+                { color: 'rgba(255, 0, 255, 0.7)', speed: 0.03, amp: 15, freq: 0.015 },
+                { color: 'rgba(255, 255, 0, 0.5)', speed: 0.07, amp: 10, freq: 0.03 }
+            ];
+
+            waves.forEach(wave => {
+                wCtx.beginPath();
+                wCtx.lineWidth = 2;
+                wCtx.strokeStyle = wave.color;
+                wCtx.shadowBlur = 5;
+                wCtx.shadowColor = wave.color;
+                for (let x = 0; x < wCanvas.width; x++) {
+                    // Tạo sóng dao động tự nhiên: kết hợp di chuyển và biến đổi biên độ theo thời gian
+                    const y = wCanvas.height / 2 + 
+                              Math.sin(x * wave.freq + time * wave.speed) * wave.amp * 
+                              (0.8 + 0.5 * Math.sin(time * 0.05 + x * 0.01)); 
+                    if (x === 0) wCtx.moveTo(x, y);
+                    else wCtx.lineTo(x, y);
+                }
+                wCtx.stroke();
+            });
+
+            time += 1;
+            requestAnimationFrame(drawWaveChart);
+        }
+        drawWaveChart(); // Chạy biểu đồ sóng
+    </script>
+</body>
+</html>
